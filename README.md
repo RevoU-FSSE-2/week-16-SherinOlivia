@@ -2,6 +2,11 @@
 # Week 16 Assignment Overview
 
 
+## Project Update/Status
+- cloned from previous assignment
+- commented online database connection
+- On Progress: Customizing paths and controller
+
 ### Contact Me:
 
 <img src="https://raw.githubusercontent.com/RevoU-FSSE-2/week-7-SherinOlivia/3dd7cdf0d5c9fc1828f0dfcac8ef2e9c057902be/assets/gmail-icon.svg" width="15px" background-color="none">[SOChronicle@gmail.com](mailto:SOChronicle@gmail.com) [Personal]
