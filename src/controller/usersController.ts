@@ -89,7 +89,12 @@ const loginUser = async (req: Request, res: Response) => {
     }
 }
 
-
+exports.logout_session = async (req: Request, res: Response) => {
+    res.clearCookie('accesToken');
+    res.clearCookie('refreshToken');
+    res.json();
+  };
+  
 // Get All User data (Cust, Staff, Admin) ===> Admin Only!
 const getAllUser = async (req: Request, res: Response) => {
     try {
