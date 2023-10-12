@@ -4,7 +4,7 @@ import expressMiddleware from "./expressMiddleware";
 import helmetMiddleware from "./helmetMiddleware";
 import requestIdMiddleware from "./requestMiddleware";
 import morganMiddleware from "./morganMiddleware";
-import corsMiddleware from "./corsMiddleware";
+// import corsMiddleware from "./corsMiddleware";
 
 const appMiddleware = (app: Application) => {
     morganMiddleware(app)
@@ -12,7 +12,7 @@ const appMiddleware = (app: Application) => {
     helmetMiddleware(app)
     expressMiddleware(app)
     cookieMiddleware(app)
-    corsMiddleware(app);
+    // corsMiddleware(app);
 }
 
 export default appMiddleware

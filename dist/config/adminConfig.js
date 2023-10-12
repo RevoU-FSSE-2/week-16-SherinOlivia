@@ -20,9 +20,10 @@ const insertAdmin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const [adminCheck] = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.users WHERE role = 'admin'`);
         if (Object.keys(adminCheck).length === 0) {
             const adminUsername = process.env.ADMIN_USERNAME;
+            const adminEmail = process.env.ADMIN_EMAIL;
             const adminPass = process.env.ADMIN_PASS;
             const hashedPass = yield bcrypt_1.default.hash(adminPass, 10);
-            yield dbConnection_1.DB.promise().query(`INSERT INTO railway.users (username, password, role) VALUES ('${adminUsername}', '${hashedPass}', 'admin')`);
+            yield dbConnection_1.DB.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES ('${adminUsername}','${adminEmail}', '${hashedPass}', 'admin')`);
             console.log("Admin Account successfully created! Welcome!");
         }
         else {

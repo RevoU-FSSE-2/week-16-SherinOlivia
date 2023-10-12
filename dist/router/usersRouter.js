@@ -12,6 +12,8 @@ const authorizationMiddleware_1 = __importDefault(require("../middleware/authori
 userrouter.post('/register', usersController_1.registerUser);
 // Login Account
 userrouter.post('/login', usersController_1.loginUser);
+// Logout & Cookies clear
+userrouter.post('/logout', usersController_1.logoutUser);
 // Get All Cust Data (Cust) ===> Staff & Admin Only!
 userrouter.get('/cust', authenticationMiddleware_1.default, (0, authorizationMiddleware_1.default)(['staff', 'admin']), usersController_1.getAllCust);
 // Patch/Update name & address by id

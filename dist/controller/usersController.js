@@ -12,22 +12,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUser = exports.getAllCust = exports.getAllUser = exports.loginUser = exports.registerUser = void 0;
+exports.updateUser = exports.getAllCust = exports.getAllUser = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
 const dbConnection_1 = require("../config/dbConnection");
 const errorHandling_1 = require("./errorHandling");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jwtConfig_1 = __importDefault(require("../config/jwtConfig"));
+const node_cache_1 = __importDefault(require("node-cache"));
+const failedLoginAttemptsCache = new node_cache_1.default({ stdTTL: 600 });
 // Register Account (Reminder: default is cust, admin can register staff)
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { username, password, role } = req.body;
+        const { username, email, password, role } = req.body;
         const hashedPass = yield bcrypt_1.default.hash(password, 10);
-        const [existingUser] = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM railway.users WHERE username = ?`, [username]);
+        const [existingUser] = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM railway.users WHERE email = ?`, [email]);
         if (req.role = "admin") {
             console.log(req.role, "<=== test check role");
             if (existingUser.length === 0) {
-                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`, [username, hashedPass, role]);
+                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`, [username, email, hashedPass, role]);
                 const getNewUser = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
             }
@@ -38,7 +40,7 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         }
         else {
             if (existingUser.length === 0) {
-                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`, [username, hashedPass, 'cust']);
+                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`, [username, email, hashedPass, 'cust']);
                 const getNewUser = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
             }
@@ -57,15 +59,22 @@ exports.registerUser = registerUser;
 // Login Account
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { username, password } = req.body;
-        const existingUser = yield dbConnection_1.DBLocal.promise().query("SELECT * FROM railway.users WHERE username = ?", [username]);
+        const { email, password } = req.body;
+        const existingUser = yield dbConnection_1.DBLocal.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]);
+        const failedAttempts = failedLoginAttemptsCache.get(email);
         const user = existingUser[0][0];
         console.log(user, "password:", user.password);
+        if (failedAttempts !== undefined && failedAttempts >= 5) {
+            return res.status(400).json((0, errorHandling_1.errorHandling)('Too many failed login attempts', null));
+        }
+        // password check
         const passwordCheck = yield bcrypt_1.default.compare(password, user.password);
         if (passwordCheck) {
             // access token & refresh token
             const accessToken = jsonwebtoken_1.default.sign({ username: user.username, id: user.id, role: user.role }, jwtConfig_1.default, { expiresIn: "24h" });
             const refreshToken = jsonwebtoken_1.default.sign({ username: user.username, id: user.id, role: user.role }, jwtConfig_1.default, { expiresIn: "7d" });
+            // reset limit login
+            failedLoginAttemptsCache.del(email);
             // expiration time for tokens
             const accessTokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
             const refreshTokenExpiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -84,6 +93,8 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             }, null));
         }
         else {
+            const newFailedAttempts = (failedAttempts || 0) + 1;
+            failedLoginAttemptsCache.set(email, newFailedAttempts);
             res.status(400).json((0, errorHandling_1.errorHandling)('Password is incorrect', null));
         }
     }
@@ -93,11 +104,12 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.loginUser = loginUser;
-exports.logout_session = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.clearCookie('accesToken');
     res.clearCookie('refreshToken');
     res.json();
 });
+exports.logoutUser = logoutUser;
 // Get All User data (Cust, Staff, Admin) ===> Admin Only!
 const getAllUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {

@@ -9,11 +9,13 @@ const insertAdmin = async (req?: Request, res?: Response) => {
         
         if (Object.keys(adminCheck).length === 0) {
             const adminUsername = process.env.ADMIN_USERNAME;
+            const adminEmail = process.env.ADMIN_EMAIL;
             const adminPass = process.env.ADMIN_PASS;
             const hashedPass = await bcrypt.hash(adminPass!, 10);
             
-        await DB.promise().query(`INSERT INTO railway.users (username, password, role) VALUES ('${adminUsername}', '${hashedPass}', 'admin')`)
+        await DB.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES ('${adminUsername}','${adminEmail}', '${hashedPass}', 'admin')`)
         console.log("Admin Account successfully created! Welcome!");    
+
     } else {
         console.log("Reminder: Admin already exists");
         return

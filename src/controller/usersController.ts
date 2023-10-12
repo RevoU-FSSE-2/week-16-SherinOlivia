@@ -1,23 +1,26 @@
 import { Request, Response } from 'express';
 import { DBLocal } from '../config/dbConnection';
 import { errorHandling } from './errorHandling';
-import bcrypt from 'bcrypt'
-import jwt, { Secret } from 'jsonwebtoken'
-import JWT_TOKEN from '../config/jwtConfig'
+import bcrypt from 'bcrypt';
+import jwt, { Secret } from 'jsonwebtoken';
+import JWT_TOKEN from '../config/jwtConfig';
 import { RowDataPacket } from 'mysql2';
+import NodeCache from 'node-cache';
+
+const failedLoginAttemptsCache = new NodeCache({ stdTTL: 600 });
 
 // Register Account (Reminder: default is cust, admin can register staff)
 const registerUser = async (req: any, res: Response) => {
     try {
-        const { username, password, role } =  req.body;
+        const { username, email, password, role } =  req.body;
         const hashedPass = await bcrypt.hash(password, 10)
-        const [existingUser] = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE username = ?`, [username]) as RowDataPacket[];
+        const [existingUser] = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE email = ?`, [email]) as RowDataPacket[];
         if (req.role = "admin") {
             console.log(req.role, "<=== test check role")
             if (existingUser.length === 0) {
                 const [newUser] = await DBLocal.promise().query(
-                `INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`,
-                [username, hashedPass, role]) as RowDataPacket[];
+                `INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`,
+                [username, email, hashedPass, role]) as RowDataPacket[];
     
                 const getNewUser = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json(errorHandling(getNewUser[0], null));
@@ -28,8 +31,8 @@ const registerUser = async (req: any, res: Response) => {
         } else {
             if (existingUser.length === 0) {
                 const [newUser] = await DBLocal.promise().query(
-                `INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`,
-                [username, hashedPass, 'cust']) as RowDataPacket[];
+                `INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`,
+                [username, email, hashedPass, 'cust']) as RowDataPacket[];
     
                 const getNewUser = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json(errorHandling(getNewUser[0], null));
@@ -49,11 +52,18 @@ const registerUser = async (req: any, res: Response) => {
 
 const loginUser = async (req: Request, res: Response) => {
     try {
-        const { username, password } = req.body
-        const existingUser = await DBLocal.promise().query("SELECT * FROM railway.users WHERE username = ?", [username]) as RowDataPacket[];
+        const { email, password } = req.body
+        const existingUser = await DBLocal.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]) as RowDataPacket[];
+        
+        const failedAttempts = failedLoginAttemptsCache.get<number>(email);
         const user = existingUser[0][0]
         console.log(user, "password:", user.password)
         
+        if (failedAttempts !== undefined && failedAttempts >= 5) {
+            return res.status(400).json(errorHandling('Too many failed login attempts', null));
+        }
+
+        // password check
         const passwordCheck = await bcrypt.compare(password, user.password) 
 
         if (passwordCheck) {
@@ -61,6 +71,9 @@ const loginUser = async (req: Request, res: Response) => {
             const accessToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "24h" });
 
             const refreshToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "7d" });
+            
+            // reset limit login
+            failedLoginAttemptsCache.del(email);
 
             // expiration time for tokens
             const accessTokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
@@ -81,6 +94,9 @@ const loginUser = async (req: Request, res: Response) => {
                 message: `${user.username} Successfully logged in as ${user.role}`,
                 data: accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration}, null))
         } else {
+            
+            const newFailedAttempts = (failedAttempts || 0) + 1;
+            failedLoginAttemptsCache.set(email, newFailedAttempts);
             res.status(400).json(errorHandling('Password is incorrect', null))
           }
     } catch (error) {
@@ -89,7 +105,7 @@ const loginUser = async (req: Request, res: Response) => {
     }
 }
 
-exports.logout_session = async (req: Request, res: Response) => {
+const logoutUser = async (req: Request, res: Response) => {
     res.clearCookie('accesToken');
     res.clearCookie('refreshToken');
     res.json();
@@ -173,5 +189,5 @@ const updateUser = async (req: Request, res: Response) => {
 }
 
 
-export { registerUser, loginUser, getAllUser, getAllCust, updateUser }
+export { registerUser, loginUser, logoutUser, getAllUser, getAllCust, updateUser }
 
