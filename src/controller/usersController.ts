@@ -15,7 +15,8 @@ const registerUser = async (req: any, res: Response) => {
         const { username, email, password, role } =  req.body;
         const hashedPass = await bcrypt.hash(password, 10)
         const [existingUser] = await DB.promise().query(`SELECT * FROM railway.users WHERE email = ?`, [email]) as RowDataPacket[];
-        if (req.role = "admin") {
+        
+        if (req.role === "admin") {
             console.log(req.role, "<=== test check role")
             if (existingUser.length === 0) {
                 const [newUser] = await DB.promise().query(

@@ -26,7 +26,7 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const { username, email, password, role } = req.body;
         const hashedPass = yield bcrypt_1.default.hash(password, 10);
         const [existingUser] = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.users WHERE email = ?`, [email]);
-        if (req.role = "admin") {
+        if (req.role === "admin") {
             console.log(req.role, "<=== test check role");
             if (existingUser.length === 0) {
                 const [newUser] = yield dbConnection_1.DB.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`, [username, email, hashedPass, role]);
