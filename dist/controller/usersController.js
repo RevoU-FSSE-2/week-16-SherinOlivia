@@ -130,7 +130,7 @@ const resetPasswordRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const resetKey = Math.random().toString(36).substring(2, 15);
         resetPasswordCache.set(resetKey, email);
         // passwordResetEmail(email, resetKey); // Send reset email
-        res.status(200).json((0, errorHandling_1.errorHandling)(`"Password reset Request sent to ${email}"`, null));
+        res.status(200).json((0, errorHandling_1.errorHandling)(`"Password reset Request sent to ${email} with ${resetKey}"`, null));
     }
     catch (error) {
         console.error(error);
