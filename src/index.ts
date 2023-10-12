@@ -1,6 +1,6 @@
 import express, {Express} from 'express';
 import 'dotenv/config';
-import { DB, DBLocal } from './config/dbConnection';
+import { DB } from './config/dbConnection';
 import insertAdmin from './config/adminConfig';
 import router from './router/mainRouter';
 import appMiddleware from './middleware';
