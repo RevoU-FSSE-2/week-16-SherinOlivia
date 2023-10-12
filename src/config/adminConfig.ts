@@ -5,14 +5,14 @@ import 'dotenv/config'
 
 const insertAdmin = async (req?: Request, res?: Response) => {
     try {
-        const [adminCheck] = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE role = 'admin'`);
+        const [adminCheck] = await DBLocal.promise().query(`SELECT * FROM week16.users WHERE role = 'admin'`);
         
         if (Object.keys(adminCheck).length === 0) {
             const adminUsername = process.env.ADMIN_USERNAME;
             const adminPass = process.env.ADMIN_PASS;
             const hashedPass = await bcrypt.hash(adminPass!, 10);
             
-        await DBLocal.promise().query(`INSERT INTO railway.users (username, password, role) VALUES ('${adminUsername}', '${hashedPass}', 'admin')`)
+        await DBLocal.promise().query(`INSERT INTO week16.users (username, password, role) VALUES ('${adminUsername}', '${hashedPass}', 'admin')`)
         console.log("Admin Account successfully created! Welcome!");    
     } else {
         console.log("Reminder: Admin already exists");

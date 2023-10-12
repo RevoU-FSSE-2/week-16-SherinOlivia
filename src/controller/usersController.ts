@@ -16,10 +16,10 @@ const registerUser = async (req: any, res: Response) => {
             console.log(req.role, "<=== test check role")
             if (existingUser.length === 0) {
                 const [newUser] = await DBLocal.promise().query(
-                `INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`,
+                `INSERT INTO week16.users (username, password, role) VALUES (?, ?, ?)`,
                 [username, hashedPass, role]) as RowDataPacket[];
     
-                const getNewUser = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
+                const getNewUser = await DBLocal.promise().query(`SELECT * FROM week16.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json(errorHandling(getNewUser[0], null));
             } else {
                 res.status(400).json(errorHandling(null, "Username already exist...!!"));
@@ -28,10 +28,10 @@ const registerUser = async (req: any, res: Response) => {
         } else {
             if (existingUser.length === 0) {
                 const [newUser] = await DBLocal.promise().query(
-                `INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`,
+                `INSERT INTO week16.users (username, password, role) VALUES (?, ?, ?)`,
                 [username, hashedPass, 'cust']) as RowDataPacket[];
     
-                const getNewUser = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
+                const getNewUser = await DBLocal.promise().query(`SELECT * FROM week16.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json(errorHandling(getNewUser[0], null));
             } else {
                 res.status(400).json(errorHandling(null, "Username already exist...!!"));
@@ -57,11 +57,30 @@ const loginUser = async (req: Request, res: Response) => {
         const passwordCheck = await bcrypt.compare(password, user.password) 
 
         if (passwordCheck) {
-            const token = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret)
+            // access token & refresh token
+            const accessToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "24h" });
+
+            const refreshToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "7d" });
+
+            // expiration time for tokens
+            const accessTokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            const refreshTokenExpiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+            // Cookies
+            res.cookie("access_token", accessToken, {
+                expires: accessTokenExpiration,
+                httpOnly: true,
+            });
+
+            res.cookie("refresh_token", refreshToken, {
+                expires: refreshTokenExpiration,
+                httpOnly: true,
+            });
+
             res.status(200).json(errorHandling({
                 message: `${user.username} Successfully logged in as ${user.role}`,
-                data: token}, null))
-          } else {
+                data: accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration}, null))
+        } else {
             res.status(400).json(errorHandling('Password is incorrect', null))
           }
     } catch (error) {
@@ -69,6 +88,7 @@ const loginUser = async (req: Request, res: Response) => {
         res.status(500).json(errorHandling('Cannot Connect!! Internal Error!', null));
     }
 }
+
 
 // Get All User data (Cust, Staff, Admin) ===> Admin Only!
 const getAllUser = async (req: Request, res: Response) => {
