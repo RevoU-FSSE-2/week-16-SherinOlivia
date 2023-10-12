@@ -21,19 +21,20 @@ DB.connect( function () {
 }),
 
 // DB Connection (Local)
-DBLocal.connect( function () {
-    if (DBLocal) {
-        console.log("Localhost Connection Succeed");
-    } else {
-        console.log("Localhost Connection Failed");
-    }
-})
+// DBLocal.connect( function () {
+//     if (DBLocal) {
+//         console.log("Localhost Connection Succeed");
+//     } else {
+//         console.log("Localhost Connection Failed");
+//     }
+// })
 
 // insert Super User / Admin account to Database.. (One time Use)
 insertAdmin();
 
 // router
 app.use(router)
+
 
 app.listen(port, () => {
   console.log(`Server is running on port:${port}`)
