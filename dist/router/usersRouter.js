@@ -14,6 +14,10 @@ userrouter.post('/register', usersController_1.registerUser);
 userrouter.post('/login', usersController_1.loginUser);
 // Logout & Cookies clear
 userrouter.post('/logout', usersController_1.logoutUser);
+// reset password request
+userrouter.post('/resetpassword/request', usersController_1.resetPasswordRequest);
+// reset password
+userrouter.post('/resetpassword', usersController_1.resetPassword);
 // Get All Cust Data (Cust) ===> Staff & Admin Only!
 userrouter.get('/cust', authenticationMiddleware_1.default, (0, authorizationMiddleware_1.default)(['staff', 'admin']), usersController_1.getAllCust);
 // Patch/Update name & address by id

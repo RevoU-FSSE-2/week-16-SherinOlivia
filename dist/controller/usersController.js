@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUser = exports.getAllCust = exports.getAllUser = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
+exports.resetPassword = exports.resetPasswordRequest = exports.updateUser = exports.getAllCust = exports.getAllUser = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
 const dbConnection_1 = require("../config/dbConnection");
 const errorHandling_1 = require("./errorHandling");
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -20,6 +20,12 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jwtConfig_1 = __importDefault(require("../config/jwtConfig"));
 const node_cache_1 = __importDefault(require("node-cache"));
 const failedLoginAttemptsCache = new node_cache_1.default({ stdTTL: 600 });
+const resetPasswordCache = new node_cache_1.default({ stdTTL: 300 });
+// const passwordResetEmail = (email: any, resetKey: string) => {
+//     console.log(`Subject: Password reset request`);
+//     console.log(`To: ${email}`);
+//     console.log(`Body: hit me, http://localhost:3000/reset?key=${resetKey}`);
+// }
 // Register Account (Reminder: default is cust, admin can register staff)
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -95,21 +101,69 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         else {
             const newFailedAttempts = (failedAttempts || 0) + 1;
             failedLoginAttemptsCache.set(email, newFailedAttempts);
-            res.status(400).json((0, errorHandling_1.errorHandling)('Password is incorrect', null));
+            res.status(400).json((0, errorHandling_1.errorHandling)(null, 'Password is incorrect'));
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)('Cannot Connect!! Internal Error!', null));
+        res.status(500).json((0, errorHandling_1.errorHandling)(null, 'Cannot Connect!! Internal Error!'));
     }
 });
 exports.loginUser = loginUser;
+// logout
 const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.clearCookie('accesToken');
     res.clearCookie('refreshToken');
     res.json();
 });
 exports.logoutUser = logoutUser;
+// request reset password
+const resetPasswordRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { email } = req.body;
+        const existingUser = yield dbConnection_1.DB.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]);
+        const user = existingUser[0][0];
+        if (!user) {
+            res.status(400).json((0, errorHandling_1.errorHandling)(null, "User not found"));
+            return;
+        }
+        const resetKey = Math.random().toString(36).substring(2, 15);
+        resetPasswordCache.set(resetKey, email);
+        // passwordResetEmail(email, resetKey); // Send reset email
+        res.status(200).json((0, errorHandling_1.errorHandling)(`"Password reset Request sent to ${email}"`, null));
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Password reset request failed"));
+    }
+});
+exports.resetPasswordRequest = resetPasswordRequest;
+//  reset password
+const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { password } = req.body;
+        const resetKey = req.query.resetKey;
+        const email = resetPasswordCache.get(resetKey);
+        if (!email) {
+            res.status(400).json((0, errorHandling_1.errorHandling)(null, "Invalid token"));
+            return;
+        }
+        const user = yield dbConnection_1.DB.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]);
+        if (!user) {
+            res.status(400).json((0, errorHandling_1.errorHandling)(null, "User not found"));
+            return;
+        }
+        const hashedPassword = yield bcrypt_1.default.hash(password, 10);
+        yield dbConnection_1.DB.promise().query("UPDATE railway.users SET password = ? WHERE email = ?", [hashedPassword, email]);
+        resetPasswordCache.del(resetKey); // If successful, remove the key from the cache
+        res.status(200).json((0, errorHandling_1.errorHandling)("Password reset success", null));
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Password reset failed"));
+    }
+});
+exports.resetPassword = resetPassword;
 // Get All User data (Cust, Staff, Admin) ===> Admin Only!
 const getAllUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {

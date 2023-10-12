@@ -8,6 +8,13 @@ import { RowDataPacket } from 'mysql2';
 import NodeCache from 'node-cache';
 
 const failedLoginAttemptsCache = new NodeCache({ stdTTL: 600 });
+const resetPasswordCache = new NodeCache({ stdTTL: 300 });
+
+// const passwordResetEmail = (email: any, resetKey: string) => {
+//     console.log(`Subject: Password reset request`);
+//     console.log(`To: ${email}`);
+//     console.log(`Body: hit me, http://localhost:3000/reset?key=${resetKey}`);
+// }
 
 // Register Account (Reminder: default is cust, admin can register staff)
 const registerUser = async (req: any, res: Response) => {
@@ -98,20 +105,75 @@ const loginUser = async (req: Request, res: Response) => {
 
             const newFailedAttempts = (failedAttempts || 0) + 1;
             failedLoginAttemptsCache.set(email, newFailedAttempts);
-            res.status(400).json(errorHandling('Password is incorrect', null))
+            res.status(400).json(errorHandling(null, 'Password is incorrect'))
           }
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling('Cannot Connect!! Internal Error!', null));
+        res.status(500).json(errorHandling(null, 'Cannot Connect!! Internal Error!'));
     }
 }
 
+// logout
 const logoutUser = async (req: Request, res: Response) => {
     res.clearCookie('accesToken');
     res.clearCookie('refreshToken');
     res.json();
   };
   
+// request reset password
+const resetPasswordRequest = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body
+        const existingUser = await DB.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]) as RowDataPacket[];
+        const user = existingUser[0][0]
+        if (!user) {
+            res.status(400).json(errorHandling(null, "User not found"));
+            return;
+        }
+
+        const resetKey = Math.random().toString(36).substring(2, 15);
+        resetPasswordCache.set(resetKey, email);
+        // passwordResetEmail(email, resetKey); // Send reset email
+        res.status(200).json(errorHandling(`"Password reset Request sent to ${email}"`, null ));
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json(errorHandling(null, "Password reset request failed"));
+    }
+ }
+
+//  reset password
+ const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { password } = req.body;
+        const resetKey = req.query.resetKey as string;
+        const email = resetPasswordCache.get(resetKey);
+
+        if (!email) {
+            res.status(400).json(errorHandling(null, "Invalid token"));
+            return;
+        }
+
+        const user = await DB.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]) as RowDataPacket[];
+        if (!user) {
+            res.status(400).json(errorHandling(null, "User not found"));
+            return;
+        }
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await DB.promise().query("UPDATE railway.users SET password = ? WHERE email = ?", [hashedPassword, email]);
+
+        resetPasswordCache.del(resetKey); // If successful, remove the key from the cache
+        res.status(200).json(errorHandling("Password reset success", null));
+    } catch (error) {
+        console.error(error);
+        res.status(500).json(errorHandling(null, "Password reset failed"));
+    }
+};
+
+
+
+
 // Get All User data (Cust, Staff, Admin) ===> Admin Only!
 const getAllUser = async (req: Request, res: Response) => {
     try {
@@ -190,5 +252,7 @@ const updateUser = async (req: Request, res: Response) => {
 }
 
 
-export { registerUser, loginUser, logoutUser, getAllUser, getAllCust, updateUser }
+export { registerUser, loginUser, logoutUser, getAllUser, getAllCust, updateUser, resetPasswordRequest, resetPassword}
+
+
 

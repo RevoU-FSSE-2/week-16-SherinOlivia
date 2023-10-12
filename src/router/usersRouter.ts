@@ -1,6 +1,6 @@
 import express from 'express'
 const userrouter = express.Router()
-import { registerUser, loginUser, getAllUser, getAllCust, updateUser, logoutUser } from '../controller/usersController';
+import { registerUser, loginUser, getAllUser, getAllCust, updateUser, logoutUser, resetPasswordRequest, resetPassword } from '../controller/usersController';
 import authenMiddleware from '../middleware/authenticationMiddleware'
 import authorMiddleware from '../middleware/authorizationMiddleware'
 
@@ -12,6 +12,12 @@ userrouter.post('/login', loginUser);
 
 // Logout & Cookies clear
 userrouter.post('/logout', logoutUser);
+
+// reset password request
+userrouter.post('/resetpassword/request', resetPasswordRequest)
+
+// reset password
+userrouter.post('/resetpassword', resetPassword)
 
 // Get All Cust Data (Cust) ===> Staff & Admin Only!
 userrouter.get('/cust', authenMiddleware, authorMiddleware(['staff','admin']), getAllCust);
