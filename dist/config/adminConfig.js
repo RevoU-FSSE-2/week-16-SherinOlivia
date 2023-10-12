@@ -17,12 +17,12 @@ const dbConnection_1 = require("./dbConnection");
 require("dotenv/config");
 const insertAdmin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const [adminCheck] = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM week16.users WHERE role = 'admin'`);
+        const [adminCheck] = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.users WHERE role = 'admin'`);
         if (Object.keys(adminCheck).length === 0) {
             const adminUsername = process.env.ADMIN_USERNAME;
             const adminPass = process.env.ADMIN_PASS;
             const hashedPass = yield bcrypt_1.default.hash(adminPass, 10);
-            yield dbConnection_1.DBLocal.promise().query(`INSERT INTO week16.users (username, password, role) VALUES ('${adminUsername}', '${hashedPass}', 'admin')`);
+            yield dbConnection_1.DB.promise().query(`INSERT INTO railway.users (username, password, role) VALUES ('${adminUsername}', '${hashedPass}', 'admin')`);
             console.log("Admin Account successfully created! Welcome!");
         }
         else {

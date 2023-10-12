@@ -27,8 +27,8 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (req.role = "admin") {
             console.log(req.role, "<=== test check role");
             if (existingUser.length === 0) {
-                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO week16.users (username, password, role) VALUES (?, ?, ?)`, [username, hashedPass, role]);
-                const getNewUser = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM week16.users WHERE id = ?`, [newUser.insertId]);
+                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`, [username, hashedPass, role]);
+                const getNewUser = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
             }
             else {
@@ -38,8 +38,8 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         }
         else {
             if (existingUser.length === 0) {
-                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO week16.users (username, password, role) VALUES (?, ?, ?)`, [username, hashedPass, 'cust']);
-                const getNewUser = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM week16.users WHERE id = ?`, [newUser.insertId]);
+                const [newUser] = yield dbConnection_1.DBLocal.promise().query(`INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`, [username, hashedPass, 'cust']);
+                const getNewUser = yield dbConnection_1.DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
             }
             else {

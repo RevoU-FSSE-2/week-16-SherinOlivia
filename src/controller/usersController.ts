@@ -16,10 +16,10 @@ const registerUser = async (req: any, res: Response) => {
             console.log(req.role, "<=== test check role")
             if (existingUser.length === 0) {
                 const [newUser] = await DBLocal.promise().query(
-                `INSERT INTO week16.users (username, password, role) VALUES (?, ?, ?)`,
+                `INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`,
                 [username, hashedPass, role]) as RowDataPacket[];
     
-                const getNewUser = await DBLocal.promise().query(`SELECT * FROM week16.users WHERE id = ?`, [newUser.insertId]);
+                const getNewUser = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json(errorHandling(getNewUser[0], null));
             } else {
                 res.status(400).json(errorHandling(null, "Username already exist...!!"));
@@ -28,10 +28,10 @@ const registerUser = async (req: any, res: Response) => {
         } else {
             if (existingUser.length === 0) {
                 const [newUser] = await DBLocal.promise().query(
-                `INSERT INTO week16.users (username, password, role) VALUES (?, ?, ?)`,
+                `INSERT INTO railway.users (username, password, role) VALUES (?, ?, ?)`,
                 [username, hashedPass, 'cust']) as RowDataPacket[];
     
-                const getNewUser = await DBLocal.promise().query(`SELECT * FROM week16.users WHERE id = ?`, [newUser.insertId]);
+                const getNewUser = await DBLocal.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
                 res.status(200).json(errorHandling(getNewUser[0], null));
             } else {
                 res.status(400).json(errorHandling(null, "Username already exist...!!"));
