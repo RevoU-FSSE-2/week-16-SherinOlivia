@@ -93,6 +93,11 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.loginUser = loginUser;
+exports.logout_session = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.clearCookie('accesToken');
+    res.clearCookie('refreshToken');
+    res.json();
+});
 // Get All User data (Cust, Staff, Admin) ===> Admin Only!
 const getAllUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
