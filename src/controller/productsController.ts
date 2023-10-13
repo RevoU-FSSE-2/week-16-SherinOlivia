@@ -14,14 +14,13 @@ const createNewProduct = async (req: Request, res: Response) => {
             [name, qty, price]);
 
             const [newProduct] = await DB.promise().query(`SELECT * FROM railway.products WHERE name = ?`, [name]) as RowDataPacket[];
-            res.status(200).json(errorHandling(newProduct, null));
+            return res.status(200).json(errorHandling(newProduct, null));
         } else {
-            res.status(400).json(errorHandling(null, "Product already exist...!!"));
-            return
+            return res.status(400).json(errorHandling(null, "Product already exist...!!"));
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Can't create new product...!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Can't create new product...!! Internal Error!"));
     }
 }
 
@@ -34,19 +33,18 @@ const createNewProduct = async (req: Request, res: Response) => {
         const [existingProduct] = await DB.promise().query(`SELECT * FROM railway.products WHERE id = ?`, [id]) as RowDataPacket[];
         
         if (existingProduct.length === 0) {
-            res.status(400).json(errorHandling(null, "Product doesn't exist...!!"));
-            return
+            return res.status(400).json(errorHandling(null, "Product doesn't exist...!!"));
 
         } else {
             await DB.promise().query(
             `UPDATE railway.products SET qty = ?, price = ? WHERE id = ?`,
             [qty, price, id]);
             const updatedProduct = await DB.promise().query(`SELECT * FROM railway.products WHERE id = ?`, [id]) as RowDataPacket[];
-            res.status(200).json(errorHandling(updatedProduct[0][0], null));
+            return res.status(200).json(errorHandling(updatedProduct[0][0], null));
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Can't Update Product...!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Can't Update Product...!! Internal Error!"));
     }
  }
 
@@ -57,15 +55,14 @@ const createNewProduct = async (req: Request, res: Response) => {
         const getAllProduct = await DB.promise().query(`SELECT * FROM railway.products`) as RowDataPacket[];
         
         if (getAllProduct.length === 0) {
-            res.status(400).json(errorHandling(null, "Product doesn't exist...!!"));
-            return
+            return res.status(400).json(errorHandling(null, "Product doesn't exist...!!"));
 
         } else {
-            res.status(200).json(errorHandling(getAllProduct[0], null));
+            return res.status(200).json(errorHandling(getAllProduct[0], null));
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Can't Get All Product Data...!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Can't Get All Product Data...!! Internal Error!"));
     }
  }
 
@@ -77,14 +74,13 @@ const getOneProductId = async (req: Request, res: Response) => {
 
         const [getOneProduct] = await DB.promise().query(`SELECT * FROM railway.products WHERE id = ?`, [id]) as RowDataPacket[];
         if (getOneProduct.length === 0) {
-            res.status(400).json(errorHandling(null, "Product doesn't exist...!!"));
-            return
+            return res.status(400).json(errorHandling(null, "Product doesn't exist...!!"));
         } else {
-            res.status(200).json(errorHandling(getOneProduct[0], null));
+            return res.status(200).json(errorHandling(getOneProduct[0], null));
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Can't Get Product Data...!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Can't Get Product Data...!! Internal Error!"));
     }
 }
 

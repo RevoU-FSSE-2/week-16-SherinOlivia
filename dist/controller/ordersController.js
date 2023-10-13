@@ -22,18 +22,18 @@ const createNewOrder = (req, res) => __awaiter(void 0, void 0, void 0, function*
             const [newOrder] = yield dbConnection_1.DB.promise().query(`INSERT INTO railway.orders (custId, product_name, order_qty, total, status, order_datetime, isDeleted)
             VALUES (?, ?, ?, (SELECT price FROM railway.products WHERE name = ?) * ?, ?, ?, ?)`, [custId, product_name, order_qty, product_name, order_qty, 'pending', new Date(), '0']);
             const [createdOrder] = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.orders WHERE id = ?`, [newOrder.insertId]);
-            res.status(200).json((0, errorHandling_1.errorHandling)(createdOrder[0], null));
+            return res.status(200).json((0, errorHandling_1.errorHandling)(createdOrder[0], null));
         }
         else {
             const [newOrder] = yield dbConnection_1.DB.promise().query(`INSERT INTO railway.orders (custId, product_name, order_qty, total, status, order_datetime, isDeleted)
             VALUES (?, ?, ?, (SELECT price FROM railway.products WHERE name = ?) * ?, ?, ?, ?)`, [id, product_name, order_qty, product_name, order_qty, 'pending', new Date(), '0']);
             const [createdOrder] = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.orders WHERE id = ?`, [newOrder.insertId]);
-            res.status(200).json((0, errorHandling_1.errorHandling)(createdOrder[0], null));
+            return res.status(200).json((0, errorHandling_1.errorHandling)(createdOrder[0], null));
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Order Request Failed..!! Internal Error!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Order Request Failed..!! Internal Error!"));
     }
 });
 exports.createNewOrder = createNewOrder;
@@ -45,23 +45,22 @@ const updateOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const getOrder = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.orders WHERE id = ? AND isDeleted = ?`, [id, '0']);
         if (getOrder[0].length > 0) {
             if (getOrder[0][0].status === "cancelled") {
-                res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order already cancelled...! Please make new Order!"));
+                return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order already cancelled...! Please make new Order!"));
                 return;
             }
             else {
                 yield dbConnection_1.DB.promise().query(`UPDATE railway.orders SET status = ? WHERE id = ?`, [status, id]);
                 const updatedOrder = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.orders WHERE id = ?`, [id]);
-                res.status(200).json((0, errorHandling_1.errorHandling)(updatedOrder[0][0], null));
+                return res.status(200).json((0, errorHandling_1.errorHandling)(updatedOrder[0][0], null));
             }
         }
         else {
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order doesn't exist...!!"));
-            return;
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order doesn't exist...!!"));
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Order Status Update Failed..!! Internal Error!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Order Status Update Failed..!! Internal Error!"));
     }
 });
 exports.updateOrder = updateOrder;
@@ -74,13 +73,13 @@ const getAllOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 SELECT o.id, o.status, o.custId, u.name, u.address, o.product_name, o.order_qty, o.total, o.order_datetime FROM  railway.orders as o LEFT JOIN railway.users as u ON o.custId = u.id
                 WHERE o.CustId = ? AND o.isDeleted = ?`, [id, '0']);
             if (getOrders[0].length > 0) {
-                res.status(200).json((0, errorHandling_1.errorHandling)({
+                return res.status(200).json((0, errorHandling_1.errorHandling)({
                     message: "Order data retrieved Successfully",
                     data: getOrders[0]
                 }, null));
             }
             else {
-                res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order doesn't exist...!!"));
+                return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order doesn't exist...!!"));
             }
         }
         else if (role == "staff" || role == "admin") {
@@ -93,17 +92,16 @@ const getAllOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 }, null));
             }
             else {
-                res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order doesn't exist...!!"));
+                return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Order doesn't exist...!!"));
             }
         }
         else {
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, "Unauthorized Access...!! Contact Staff!"));
-            return;
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Unauthorized Access...!! Contact Staff!"));
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to retreive order data..!! Internal Error!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to retreive order data..!! Internal Error!"));
     }
 });
 exports.getAllOrders = getAllOrders;
@@ -114,14 +112,14 @@ const getAllCustOrders = (req, res) => __awaiter(void 0, void 0, void 0, functio
         const getCustOrders = yield dbConnection_1.DB.promise().query(`
         SELECT o.id, o.status, o.custId, u.name, u.address, o.product_name, o.order_qty, o.total, o.order_datetime FROM railway.orders as o LEFT JOIN railway.users as u ON o.custId = u.id
         WHERE o.CustId = ? AND isDeleted = ?`, [userId, '0']);
-        res.status(200).json((0, errorHandling_1.errorHandling)({
+        return res.status(200).json((0, errorHandling_1.errorHandling)({
             message: "Cust orders retrieved Successfully",
             data: getCustOrders[0]
         }, null));
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to retreive cust orders..!! Internal Error!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to retreive cust orders..!! Internal Error!"));
     }
 });
 exports.getAllCustOrders = getAllCustOrders;
@@ -136,27 +134,25 @@ const deleteOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (role == "cust") {
             if (checkOrder[0].length > 0 && checkOrder[0][0].custId == id) {
                 yield dbConnection_1.DB.promise().query(`UPDATE railway.orders SET isDeleted = ? WHERE railway.orders.id = ? AND railway.orders.custId = ?`, ['1', orderId, id]);
-                res.status(200).json((0, errorHandling_1.errorHandling)("Order data Successfully deleted", null));
+                return res.status(200).json((0, errorHandling_1.errorHandling)("Order data Successfully deleted", null));
             }
             else {
-                res.status(400).json((0, errorHandling_1.errorHandling)(null, "No Order Found..!!"));
-                return;
+                return res.status(400).json((0, errorHandling_1.errorHandling)(null, "No Order Found..!!"));
             }
         }
         else {
             if (checkOrder[0].length > 0) {
                 yield dbConnection_1.DB.promise().query(`UPDATE railway.orders SET isDeleted = ? WHERE railway.orders.id = ? AND railway.orders.custId = ?`, ['1', orderId, id]);
-                res.status(200).json((0, errorHandling_1.errorHandling)("Order data Successfully deleted", null));
+                return res.status(200).json((0, errorHandling_1.errorHandling)("Order data Successfully deleted", null));
             }
             else {
-                res.status(400).json((0, errorHandling_1.errorHandling)(null, "No Order Found..!!"));
-                return;
+                return res.status(400).json((0, errorHandling_1.errorHandling)(null, "No Order Found..!!"));
             }
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to remove order..!! Internal Error!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to remove order..!! Internal Error!"));
     }
 });
 exports.deleteOrder = deleteOrder;
@@ -167,11 +163,11 @@ const getOrderHistory = (req, res) => __awaiter(void 0, void 0, void 0, function
         SELECT o.id, o.status, o.custId, u.name, u.address, o.product_name, 
         o.order_qty, o.total, o.order_datetime FROM railway.orders as o 
         LEFT JOIN railway.users as u ON o.custId = u.id`);
-        res.status(200).json((0, errorHandling_1.errorHandling)(orderHistory, null));
+        return res.status(200).json((0, errorHandling_1.errorHandling)(orderHistory, null));
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to retreive orders history...!! Internal Error!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Failed to retreive orders history...!! Internal Error!"));
     }
 });
 exports.getOrderHistory = getOrderHistory;

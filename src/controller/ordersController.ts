@@ -20,7 +20,7 @@ const createNewOrder = async (req: Request, res: Response) => {
             const [createdOrder] = await DB.promise().query(`SELECT * FROM railway.orders WHERE id = ?`,
             [newOrder.insertId]) as RowDataPacket[];
             
-            res.status(200).json(errorHandling(createdOrder[0], null));
+            return res.status(200).json(errorHandling(createdOrder[0], null));
         } else {
             const [newOrder] = await DB.promise().query(`INSERT INTO railway.orders (custId, product_name, order_qty, total, status, order_datetime, isDeleted)
             VALUES (?, ?, ?, (SELECT price FROM railway.products WHERE name = ?) * ?, ?, ?, ?)`,
@@ -29,12 +29,12 @@ const createNewOrder = async (req: Request, res: Response) => {
            const [createdOrder] = await DB.promise().query(`SELECT * FROM railway.orders WHERE id = ?`,
             [newOrder.insertId]) as RowDataPacket[];
             
-            res.status(200).json(errorHandling(createdOrder[0], null));
+            return res.status(200).json(errorHandling(createdOrder[0], null));
         }
 
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Order Request Failed..!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Order Request Failed..!! Internal Error!"));
     }
 }
 
@@ -49,7 +49,7 @@ const updateOrder = async (req: Request, res: Response) => {
 
         if (getOrder[0].length > 0) {
             if (getOrder[0][0].status === "cancelled") {
-                res.status(400).json(errorHandling(null, "Order already cancelled...! Please make new Order!"));
+                return res.status(400).json(errorHandling(null, "Order already cancelled...! Please make new Order!"));
             return
 
             } else {
@@ -58,15 +58,14 @@ const updateOrder = async (req: Request, res: Response) => {
     
                 const updatedOrder = await DB.promise().query(`SELECT * FROM railway.orders WHERE id = ?`,
                 [id]) as RowDataPacket[]
-                res.status(200).json(errorHandling(updatedOrder[0][0], null)); 
+                return res.status(200).json(errorHandling(updatedOrder[0][0], null)); 
             }
         } else {
-            res.status(400).json(errorHandling(null, "Order doesn't exist...!!"));
-            return
+            return res.status(400).json(errorHandling(null, "Order doesn't exist...!!"));
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Order Status Update Failed..!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Order Status Update Failed..!! Internal Error!"));
     }
 }
 
@@ -81,11 +80,11 @@ const getAllOrders = async (req: Request, res: Response) => {
                 WHERE o.CustId = ? AND o.isDeleted = ?`,[id, '0']) as RowDataPacket[];
 
             if (getOrders[0].length > 0) {
-                res.status(200).json(errorHandling({
+                return res.status(200).json(errorHandling({
                     message: "Order data retrieved Successfully",
                     data: getOrders[0]}, null));
             } else {
-                res.status(400).json(errorHandling(null, "Order doesn't exist...!!"));
+                return res.status(400).json(errorHandling(null, "Order doesn't exist...!!"));
             }
 
         } else if (role == "staff" || role == "admin") {
@@ -97,16 +96,15 @@ const getAllOrders = async (req: Request, res: Response) => {
                     message: "Order data retrieved Successfully",
                     data: getOrders[0]}, null));
             } else {
-                res.status(400).json(errorHandling(null, "Order doesn't exist...!!"));
+                return res.status(400).json(errorHandling(null, "Order doesn't exist...!!"));
             }
         } else {
-            res.status(400).json(errorHandling(null, "Unauthorized Access...!! Contact Staff!"));
-            return
+            return res.status(400).json(errorHandling(null, "Unauthorized Access...!! Contact Staff!"));
         }
 
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Failed to retreive order data..!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Failed to retreive order data..!! Internal Error!"));
     }
 }
 
@@ -118,12 +116,12 @@ const getAllCustOrders = async (req: Request, res: Response) => {
         SELECT o.id, o.status, o.custId, u.name, u.address, o.product_name, o.order_qty, o.total, o.order_datetime FROM railway.orders as o LEFT JOIN railway.users as u ON o.custId = u.id
         WHERE o.CustId = ? AND isDeleted = ?`,[userId, '0']) as RowDataPacket[];
 
-        res.status(200).json(errorHandling({
+        return res.status(200).json(errorHandling({
             message: "Cust orders retrieved Successfully",
             data: getCustOrders[0]}, null));
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Failed to retreive cust orders..!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Failed to retreive cust orders..!! Internal Error!"));
     }
 }
 
@@ -144,11 +142,10 @@ const deleteOrder = async (req: Request, res: Response) => {
                     `UPDATE railway.orders SET isDeleted = ? WHERE railway.orders.id = ? AND railway.orders.custId = ?`,
                     ['1', orderId, id]);
                 
-                res.status(200).json(errorHandling("Order data Successfully deleted", null));
+                return res.status(200).json(errorHandling("Order data Successfully deleted", null));
     
             } else {
-                res.status(400).json(errorHandling(null, "No Order Found..!!"));
-                return
+                return res.status(400).json(errorHandling(null, "No Order Found..!!"));
             }
         } else {
             if (checkOrder[0].length > 0) {
@@ -156,16 +153,15 @@ const deleteOrder = async (req: Request, res: Response) => {
                     `UPDATE railway.orders SET isDeleted = ? WHERE railway.orders.id = ? AND railway.orders.custId = ?`,
                     ['1', orderId, id]);
                 
-                res.status(200).json(errorHandling("Order data Successfully deleted", null));
+                return res.status(200).json(errorHandling("Order data Successfully deleted", null));
     
             } else {
-                res.status(400).json(errorHandling(null, "No Order Found..!!"));
-                return
+                return res.status(400).json(errorHandling(null, "No Order Found..!!"));
             }
         } 
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Failed to remove order..!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Failed to remove order..!! Internal Error!"));
     }
 }
 
@@ -177,10 +173,10 @@ const getOrderHistory = async (req: Request, res: Response) => {
         o.order_qty, o.total, o.order_datetime FROM railway.orders as o 
         LEFT JOIN railway.users as u ON o.custId = u.id`) as RowDataPacket[];
 
-        res.status(200).json(errorHandling(orderHistory, null));
+        return res.status(200).json(errorHandling(orderHistory, null));
     } catch (error) {
         console.error(error)
-        res.status(500).json(errorHandling(null, "Failed to retreive orders history...!! Internal Error!"));
+        return res.status(500).json(errorHandling(null, "Failed to retreive orders history...!! Internal Error!"));
     }
 }
 
