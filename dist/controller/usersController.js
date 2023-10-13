@@ -112,8 +112,8 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.loginUser = loginUser;
 // logout
 const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.clearCookie('accesToken');
-    res.clearCookie('refreshToken');
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
     res.json();
 });
 exports.logoutUser = logoutUser;

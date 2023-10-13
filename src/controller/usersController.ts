@@ -115,8 +115,8 @@ const loginUser = async (req: Request, res: Response) => {
 
 // logout
 const logoutUser = async (req: Request, res: Response) => {
-    res.clearCookie('accesToken');
-    res.clearCookie('refreshToken');
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
     res.json();
   };
   
