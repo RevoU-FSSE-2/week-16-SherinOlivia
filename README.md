@@ -46,12 +46,12 @@ Cust:
 ```
 ```JSON
 Staff:
-    "email":"zoya@gmail.com"
+    "email":"zoya@gmail.com",
     "password":"zoya123"
 ```
 ```JSON
 Admin:
-    "email":"adminr00@gmail.com"
+    "email":"adminr00@gmail.com",
     "password":"R00isADMIN"
 ```
 <br>
