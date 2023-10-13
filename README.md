@@ -31,8 +31,114 @@ The capabilities of the project are:
 **Technical:**
 ![technical-flowchart](https://raw.githubusercontent.com/SherinOlivia/public-photos-repo/main/week11/ProjectMilestone2.webp)
 
+
 ## API Endpoints
 
+<p align="center">
+<a href="https://w16sh.up.railway.app/">w16sh.up.railway.app</a>
+</p> 
+
+## Sample Accounts
+```JSON
+Cust:
+    "email": "raven@gmail.com",
+    "password":"raven321"
+```
+```JSON
+Staff:
+    "email":"zoya@gmail.com"
+    "password":"zoya123"
+```
+```JSON
+Admin:
+    "email":"adminr00@gmail.com"
+    "password":"R00isADMIN"
+```
+<br>
+
+## Request Required Data:
+**USERS:**
+```JSON
+Register (default role: cust):
+{
+    "username":"yourUsername",
+    "email": "your@email.com",
+    "password":"yourP4ssw0rd"
+}
+```
+```JSON
+Register by Admin (can give roles: cust, staff, admin):
+{
+    "username":"yourUsername",
+    "email": "your@email.com",
+    "password":"yourP4ssw0rd",
+    "role": "role"
+}
+```
+```JSON
+Login:
+{
+    "email": "your@email.com",
+    "password":"yourP4ssw0rd"
+}
+```
+```JSON
+Password Reset Request:
+{
+    "email": "your@email.com"
+}
+```
+```JSON
+Password Reset:
+{
+    "password":"yourN3WP4ssw0rd"
+}
+```
+```JSON
+Update (parameter: userId):
+{
+    "name":"yourName",
+    "address":"yourAddress(city/country)"
+}
+```
+<br>
+
+**PRODUCTS:**
+```JSON
+Create New:
+{
+    "name":"yourProductName",
+    "qty": productQty,
+    "price": productPrice
+}
+```
+```JSON
+Update (parameter: productId):
+{
+    "qty": productQty,
+    "price": productPrice
+}
+```
+<br>
+
+**ORDERS:**
+```JSON
+Create New:
+{
+    "custId": custId, (<== unneeded if login as cust)
+    "product_name": "productName",
+    "order_qty": orderQty,
+}
+```
+```JSON
+Update (parameter: orderId):
+{
+    "status": "completed / cancelled", (<== choose 1 cause enums)
+}
+```
+<br>
+
+## API Endpoints
 <p align="center">
 <a href="https://w16sh.up.railway.app/">w16sh.up.railway.app</a>
 </p> 
@@ -44,6 +150,7 @@ The capabilities of the project are:
 | ----------- | ----------- | ----------- | ----------- | ----------- |
 | **Homepage** | `GET` |[/](https://w16sh.up.railway.app/) | ❌ | ❌ |
 | **Register User** | `POST` | [/api/users/register](https://w16sh.up.railway.app/api/users/register) | ❌ | ❌ |
+| **Register User By Admin** | `POST` | [/api/users/admin/register](https://w16sh.up.railway.app/api/users/admin/register) | ✔ | **admin** |
 | **Login User** | `POST` | [/api/users/login](https://w16sh.up.railway.app/api/users/login) | ❌ | ❌ |
 | **Update Name & Address** | `PATCH` | [/api/users/update/{id}](https://w16sh.up.railway.app/api/users/update/4) | ✔ | **cust**, **staff**, **admin** |
 | **List All Cust Data** | `GET` | [/api/users/cust](https://w16sh.up.railway.app/api/users/cust) | ✔ | **staff**, **admin** |
@@ -78,13 +185,13 @@ The capabilities of the project are:
 
 ## How to Run the App
 
-For testing purposes, please access the API Documentation link above. 
+For testing purposes, please use `Postman` / `Thunder Client` VSCode extension.
 
 Otherwise:
 - git clone or download this repository to your machine
 - install the necessities: `pnpm i` / `npm i`
 - use the `.env.example` to create your own `.env` file and fill it with your data
-- Reminder: `Admin` (`Super User`) is generated automatically through a function placed in `src/config/AdminConfig`, please be warned!
+- `Admin` (aka `Super User`) is automatically generated through a function placed in `src/config/AdminConfig`, please contact me if you want me to delete the `admin` data manually from database for any testing needs!
 
 ### Contact Me:
 
