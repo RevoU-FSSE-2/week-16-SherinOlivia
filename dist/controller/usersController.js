@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.resetPasswordRequest = exports.updateUser = exports.getAllCust = exports.getAllUser = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
+exports.resetPassword = exports.resetPasswordRequest = exports.updateUser = exports.getOneUser = exports.userProfile = exports.getAllCust = exports.getAllUser = exports.logoutUser = exports.loginUser = exports.registerUserByAdmin = exports.registerUser = void 0;
 const dbConnection_1 = require("../config/dbConnection");
 const errorHandling_1 = require("./errorHandling");
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -26,8 +26,29 @@ const resetPasswordCache = new node_cache_1.default({ stdTTL: 300 });
 //     console.log(`To: ${email}`);
 //     console.log(`Body: hit me, http://localhost:3000/reset?key=${resetKey}`);
 // }
-// Register Account (Reminder: default is cust, admin can register staff)
+// Register Account (default is cust)
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { username, email, password, role } = req.body;
+        const hashedPass = yield bcrypt_1.default.hash(password, 10);
+        const [existingUser] = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.users WHERE email = ?`, [email]);
+        if (existingUser.length === 0) {
+            const [newUser] = yield dbConnection_1.DB.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`, [username, email, hashedPass, 'cust']);
+            const getNewUser = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
+            return res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
+        }
+        else {
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Username already exist...!!"));
+        }
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Register User Failed..!! Internal Error!"));
+    }
+});
+exports.registerUser = registerUser;
+// Register user by admin (can create staff)
+const registerUserByAdmin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username, email, password, role } = req.body;
         const hashedPass = yield bcrypt_1.default.hash(password, 10);
@@ -37,31 +58,20 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             if (existingUser.length === 0) {
                 const [newUser] = yield dbConnection_1.DB.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`, [username, email, hashedPass, role]);
                 const getNewUser = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
-                res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
+                return res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
             }
             else {
-                res.status(400).json((0, errorHandling_1.errorHandling)(null, "Username already exist...!!"));
-                return;
+                return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Username already exist...!!"));
             }
         }
-        else {
-            if (existingUser.length === 0) {
-                const [newUser] = yield dbConnection_1.DB.promise().query(`INSERT INTO railway.users (username, email, password, role) VALUES (?, ?, ?, ?)`, [username, email, hashedPass, 'cust']);
-                const getNewUser = yield dbConnection_1.DB.promise().query(`SELECT * FROM railway.users WHERE id = ?`, [newUser.insertId]);
-                res.status(200).json((0, errorHandling_1.errorHandling)(getNewUser[0], null));
-            }
-            else {
-                res.status(400).json((0, errorHandling_1.errorHandling)(null, "Username already exist...!!"));
-                return;
-            }
-        }
+        return res.status(401).json((0, errorHandling_1.errorHandling)(null, "Unauthorized Access...!"));
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Register User Failed..!! Internal Error!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Register User Failed..!! Internal Error!"));
     }
 });
-exports.registerUser = registerUser;
+exports.registerUserByAdmin = registerUserByAdmin;
 // Login Account
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -93,7 +103,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 expires: refreshTokenExpiration,
                 httpOnly: true,
             });
-            res.status(200).json((0, errorHandling_1.errorHandling)({
+            return res.status(200).json((0, errorHandling_1.errorHandling)({
                 message: `${user.username} Successfully logged in as ${user.role}`,
                 data: accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration
             }, null));
@@ -101,12 +111,12 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         else {
             const newFailedAttempts = (failedAttempts || 0) + 1;
             failedLoginAttemptsCache.set(email, newFailedAttempts);
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, 'Password is incorrect'));
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, 'Password is incorrect'));
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, 'Cannot Connect!! Internal Error!'));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, 'Cannot Connect!! Internal Error!'));
     }
 });
 exports.loginUser = loginUser;
@@ -124,17 +134,16 @@ const resetPasswordRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const existingUser = yield dbConnection_1.DB.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]);
         const user = existingUser[0][0];
         if (!user) {
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, "User not found"));
-            return;
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "User not found"));
         }
         const resetKey = Math.random().toString(36).substring(2, 15);
         resetPasswordCache.set(resetKey, email);
         // passwordResetEmail(email, resetKey); // Send reset email
-        res.status(200).json((0, errorHandling_1.errorHandling)(`"Password reset Request sent to ${email} with ${resetKey}"`, null));
+        return res.status(200).json((0, errorHandling_1.errorHandling)(`"Password reset Request sent to ${email} with ${resetKey}"`, null));
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Password reset request failed"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Password reset request failed"));
     }
 });
 exports.resetPasswordRequest = resetPasswordRequest;
@@ -145,22 +154,20 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const resetKey = req.query.resetKey;
         const email = resetPasswordCache.get(resetKey);
         if (!email) {
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, "Invalid token"));
-            return;
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Invalid token"));
         }
         const user = yield dbConnection_1.DB.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]);
         if (!user) {
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, "User not found"));
-            return;
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "User not found"));
         }
         const hashedPassword = yield bcrypt_1.default.hash(password, 10);
         yield dbConnection_1.DB.promise().query("UPDATE railway.users SET password = ? WHERE email = ?", [hashedPassword, email]);
         resetPasswordCache.del(resetKey); // If successful, remove the key from the cache
-        res.status(200).json((0, errorHandling_1.errorHandling)("Password reset success", null));
+        return res.status(200).json((0, errorHandling_1.errorHandling)("Password reset success", null));
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "Password reset failed"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "Password reset failed"));
     }
 });
 exports.resetPassword = resetPassword;
@@ -169,15 +176,15 @@ const getAllUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     try {
         const allUser = yield dbConnection_1.DB.promise().query('SELECT * FROM railway.users');
         if (!allUser) {
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, "User Data Unavailable..."));
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "User Data Unavailable..."));
         }
         else {
-            res.status(200).json((0, errorHandling_1.errorHandling)(allUser[0], null));
+            return res.status(200).json((0, errorHandling_1.errorHandling)(allUser[0], null));
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Retrieval Failed...!!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Retrieval Failed...!!"));
     }
 });
 exports.getAllUser = getAllUser;
@@ -185,14 +192,54 @@ exports.getAllUser = getAllUser;
 const getAllCust = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const usersData = yield dbConnection_1.DB.promise().query('SELECT * FROM railway.users WHERE role = ?', ["cust"]);
-        res.status(200).json((0, errorHandling_1.errorHandling)(usersData[0], null));
+        return res.status(200).json((0, errorHandling_1.errorHandling)(usersData[0], null));
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Retrieval Failed...!!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Retrieval Failed...!!"));
     }
 });
 exports.getAllCust = getAllCust;
+// get user by ID aka profile ===> automatically shows specific user their profile (including staff & admin)
+const userProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = req.user;
+        if (user) {
+            const userId = user.id;
+            const userData = yield dbConnection_1.DB.promise().query('SELECT * FROM railway.users WHERE id = ?', [userId]);
+            return res.status(200).json((0, errorHandling_1.errorHandling)(userData[0], null));
+        }
+        return res.status(400).json((0, errorHandling_1.errorHandling)(null, "User Data Not Found..."));
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Retrieval Failed...!!"));
+    }
+});
+exports.userProfile = userProfile;
+// get user by ID =>>> staff & admin can check specific users, user can only see their own
+const getOneUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { role, id } = req.user;
+        const checkId = req.params.id;
+        if (role == "staff" || role == "admin") {
+            const userData = yield dbConnection_1.DB.promise().query('SELECT * FROM railway.users WHERE id = ?', [checkId]);
+            return res.status(200).json((0, errorHandling_1.errorHandling)(userData[0], null));
+        }
+        else if ((role !== "staff" && role !== "admin") && id == checkId) {
+            const userData = yield dbConnection_1.DB.promise().query('SELECT * FROM railway.users WHERE id = ?', [id]);
+            return res.status(200).json((0, errorHandling_1.errorHandling)(userData[0], null));
+        }
+        else {
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "User Data Not Found..."));
+        }
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Retrieval Failed...!!"));
+    }
+});
+exports.getOneUser = getOneUser;
 // Patch/Update name & address
 const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -220,18 +267,18 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             const updatedData = yield dbConnection_1.DB.promise().query(`
                 SELECT * FROM railway.users
                 WHERE id = ?`, [checkId]);
-            res.status(200).json((0, errorHandling_1.errorHandling)({
+            return res.status(200).json((0, errorHandling_1.errorHandling)({
                 message: "User Data Updated Successfully",
                 data: updatedData[0]
             }, null));
         }
         else {
-            res.status(400).json((0, errorHandling_1.errorHandling)(null, "Unauthorized Update...!! Update Failed!!"));
+            return res.status(400).json((0, errorHandling_1.errorHandling)(null, "Unauthorized Update...!! Update Failed!!"));
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Update Failed...!!"));
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, "User Data Update Failed...!!"));
     }
 });
 exports.updateUser = updateUser;
