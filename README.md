@@ -155,6 +155,8 @@ Update (parameter: orderId):
 | **Update Name & Address** | `PATCH` | [/api/users/update/{id}](https://w16sh.up.railway.app/api/users/update/4) | ✔ | **cust**, **staff**, **admin** |
 | **List All Cust Data** | `GET` | [/api/users/cust](https://w16sh.up.railway.app/api/users/cust) | ✔ | **staff**, **admin** |
 | **List All User Data** | `GET` | [/api/users](https://w16sh.up.railway.app/api/users) | ✔ | **admin** |
+| **Get Specific User Data ('cust' can only see their own)** | `GET` | [/api/users/profile/{id}](https://w16sh.up.railway.app/api/users/profile/1) | ✔ | **cust**, **staff**, **admin** |
+| **User Profile (each user sees their own)** | `GET` | [/api/users/profile](https://w16sh.up.railway.app/api/users/profile) | ✔ | **cust**, **staff**, **admin** |
 </div>
 
 **PRODUCTS**
@@ -165,7 +167,7 @@ Update (parameter: orderId):
 | **Homepage** | `GET` |[/](https://w16sh.up.railway.app/) | ❌ | ❌ |
 | **Create New Product** | `POST` | [/api/products/new](https://w16sh.up.railway.app/api/products/new) | ✔ | **staff**, **admin** |
 | **Update Qty & Price** | `PATCH` | [/api/products/update/{id}](https://w16sh.up.railway.app/api/products/update/4) | ✔ | **staff**, **admin** |
-| **Get Product by ID** | `GET` | [/api/products/{id}](https://w16sh.up.railway.app/api/products/cust) | ❌ | ❌ |
+| **Get Product by ID** | `GET` | [/api/products/{id}](https://w16sh.up.railway.app/api/products/1) | ❌ | ❌ |
 | **List All Products** | `GET` | [/api/products](https://w16sh.up.railway.app/api/products) | ❌ | ❌ |
 </div>
 
