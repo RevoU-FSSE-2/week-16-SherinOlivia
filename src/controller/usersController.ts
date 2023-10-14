@@ -71,30 +71,35 @@ const registerUserByAdmin = async (req: any, res: Response) => {
 
 const loginUser = async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body
+        const { email, password } = req.body;
         const existingUser = await DB.promise().query("SELECT * FROM railway.users WHERE email = ?", [email]) as RowDataPacket[];
         
         const failedAttempts = failedLoginAttemptsCache.get<number>(email);
-        const user = existingUser[0][0]
-        console.log(user, "password:", user.password)
+        const user = existingUser[0][0];
+        console.log(user, "password:", user.password);
         
         if (failedAttempts !== undefined && failedAttempts >= 5) {
             return res.status(400).json(errorHandling('Too many failed login attempts', null));
         }
 
-        // password check
-        const passwordCheck = await bcrypt.compare(password, user.password) 
+        // Password check
+        const passwordCheck = await bcrypt.compare(password, user.password);
 
         if (passwordCheck) {
-            // access token & refresh token
-            const accessToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "24h" });
+            // Check if the user already has a refresh token
+            let refreshToken = req.cookies.refresh_token;
+            if (!refreshToken) {
+                // Generate a new refresh token if one doesn't exist
+                refreshToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "7d" });
+            }
 
-            const refreshToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "7d" });
+            // Access token
+            const accessToken = jwt.sign({ username: user.username, id: user.id, role: user.role }, JWT_TOKEN as Secret, { expiresIn: "24h" });
             
-            // reset limit login
+            // Reset limit login
             failedLoginAttemptsCache.del(email);
 
-            // expiration time for tokens
+            // Expiration time for tokens
             const accessTokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
             const refreshTokenExpiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -111,16 +116,55 @@ const loginUser = async (req: Request, res: Response) => {
 
             return res.status(200).json(errorHandling({
                 message: `${user.username} Successfully logged in as ${user.role}`,
-                data: accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration}, null))
+                data: accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration
+            }, null));
         } else {
-
             const newFailedAttempts = (failedAttempts || 0) + 1;
             failedLoginAttemptsCache.set(email, newFailedAttempts);
-            return res.status(400).json(errorHandling(null, 'Password is incorrect'))
-          }
+            return res.status(400).json(errorHandling(null, 'Password is incorrect'));
+        }
     } catch (error) {
-        console.error(error)
+        console.error(error);
         return res.status(500).json(errorHandling(null, 'Cannot Connect!! Internal Error!'));
+    }
+}
+
+const refreshTokenRequest = async (req: any, res: Response) => {
+    try {
+        const refreshToken = req.cookies.refresh_token; // Get the refresh token from the client
+        if (!refreshToken) {
+            return res.status(401).json(errorHandling(null, 'Refresh token not provided'));
+        }
+
+        // Verify the refresh token
+        const decodedToken: any = jwt.verify(refreshToken, JWT_TOKEN as Secret);
+
+        // Generate a new access token
+        const accessToken = jwt.sign(
+            {
+                username: decodedToken.username,
+                id: decodedToken.id,
+                role: decodedToken.role
+            },
+            JWT_TOKEN as Secret,
+            { expiresIn: '24h' }
+        );
+
+        // Set the new access token in the response cookies
+        const accessTokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        res.cookie('access_token', accessToken, {
+            expires: accessTokenExpiration,
+            httpOnly: true
+        });
+
+        res.status(200).json(errorHandling({
+            message: 'Access token refreshed',
+            data: accessToken,
+            accessTokenExpiration
+        }, null));
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json(errorHandling(null, 'Refresh token is invalid or has expired'));
     }
 }
 
@@ -297,7 +341,7 @@ const updateUser = async (req: Request, res: Response) => {
 }
 
 
-export { registerUser, registerUserByAdmin, loginUser, logoutUser, getAllUser, getAllCust, userProfile, getOneUser, updateUser, resetPasswordRequest, resetPassword}
+export { registerUser, registerUserByAdmin, loginUser, refreshTokenRequest, logoutUser, getAllUser, getAllCust, userProfile, getOneUser, updateUser, resetPasswordRequest, resetPassword}
 
 
 

@@ -152,6 +152,7 @@ Update (parameter: orderId):
 | **Register User** | `POST` | [/api/users/register](https://w16sh.up.railway.app/api/users/register) | ❌ | ❌ |
 | **Register User By Admin** | `POST` | [/api/users/admin/register](https://w16sh.up.railway.app/api/users/admin/register) | ✔ | **admin** |
 | **Login User** | `POST` | [/api/users/login](https://w16sh.up.railway.app/api/users/login) | ❌ | ❌ |
+| **Request Refresh Token** | `POST` | [/api/users/refresh](https://w16sh.up.railway.app/api/users/refresh) | ✔ | ❌ |
 | **Update Name & Address** | `PATCH` | [/api/users/update/{id}](https://w16sh.up.railway.app/api/users/update/4) | ✔ | **cust**, **staff**, **admin** |
 | **List All Cust Data** | `GET` | [/api/users/cust](https://w16sh.up.railway.app/api/users/cust) | ✔ | **staff**, **admin** |
 | **List All User Data** | `GET` | [/api/users](https://w16sh.up.railway.app/api/users) | ✔ | **admin** |

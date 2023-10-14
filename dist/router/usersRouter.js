@@ -14,6 +14,8 @@ userrouter.post('/register', usersController_1.registerUser);
 userrouter.post('/admin/register', authenticationMiddleware_1.default, (0, authorizationMiddleware_1.default)(['admin']), usersController_1.registerUserByAdmin);
 // Login Account
 userrouter.post('/login', usersController_1.loginUser);
+// Request Refresh Token
+userrouter.post('/refresh', authenticationMiddleware_1.default, usersController_1.refreshTokenRequest);
 // Logout & Cookies clear
 userrouter.post('/logout', usersController_1.logoutUser);
 // reset password request

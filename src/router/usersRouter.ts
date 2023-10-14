@@ -2,7 +2,7 @@ import express from 'express'
 const userrouter = express.Router()
 import authenMiddleware from '../middleware/authenticationMiddleware'
 import authorMiddleware from '../middleware/authorizationMiddleware'
-import { registerUser, loginUser, getAllUser, getAllCust, updateUser, logoutUser, resetPasswordRequest, resetPassword, userProfile, getOneUser, registerUserByAdmin } from '../controller/usersController';
+import { registerUser, loginUser, getAllUser, getAllCust, updateUser, logoutUser, resetPasswordRequest, resetPassword, userProfile, getOneUser, registerUserByAdmin, refreshTokenRequest } from '../controller/usersController';
 
 // Register Account (Reminder: default is cust)
 userrouter.post('/register', registerUser);
@@ -12,6 +12,9 @@ userrouter.post('/admin/register', authenMiddleware, authorMiddleware(['admin'])
 
 // Login Account
 userrouter.post('/login', loginUser);
+
+// Request Refresh Token
+userrouter.post('/refresh', authenMiddleware, refreshTokenRequest);
 
 // Logout & Cookies clear
 userrouter.post('/logout', logoutUser);

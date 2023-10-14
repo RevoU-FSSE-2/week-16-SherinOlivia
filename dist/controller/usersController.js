@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.resetPasswordRequest = exports.updateUser = exports.getOneUser = exports.userProfile = exports.getAllCust = exports.getAllUser = exports.logoutUser = exports.loginUser = exports.registerUserByAdmin = exports.registerUser = void 0;
+exports.resetPassword = exports.resetPasswordRequest = exports.updateUser = exports.getOneUser = exports.userProfile = exports.getAllCust = exports.getAllUser = exports.logoutUser = exports.refreshTokenRequest = exports.loginUser = exports.registerUserByAdmin = exports.registerUser = void 0;
 const dbConnection_1 = require("../config/dbConnection");
 const errorHandling_1 = require("./errorHandling");
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -83,15 +83,20 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (failedAttempts !== undefined && failedAttempts >= 5) {
             return res.status(400).json((0, errorHandling_1.errorHandling)('Too many failed login attempts', null));
         }
-        // password check
+        // Password check
         const passwordCheck = yield bcrypt_1.default.compare(password, user.password);
         if (passwordCheck) {
-            // access token & refresh token
+            // Check if the user already has a refresh token
+            let refreshToken = req.cookies.refresh_token;
+            if (!refreshToken) {
+                // Generate a new refresh token if one doesn't exist
+                refreshToken = jsonwebtoken_1.default.sign({ username: user.username, id: user.id, role: user.role }, jwtConfig_1.default, { expiresIn: "7d" });
+            }
+            // Access token
             const accessToken = jsonwebtoken_1.default.sign({ username: user.username, id: user.id, role: user.role }, jwtConfig_1.default, { expiresIn: "24h" });
-            const refreshToken = jsonwebtoken_1.default.sign({ username: user.username, id: user.id, role: user.role }, jwtConfig_1.default, { expiresIn: "7d" });
-            // reset limit login
+            // Reset limit login
             failedLoginAttemptsCache.del(email);
-            // expiration time for tokens
+            // Expiration time for tokens
             const accessTokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
             const refreshTokenExpiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
             // Cookies
@@ -120,6 +125,38 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.loginUser = loginUser;
+const refreshTokenRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const refreshToken = req.cookies.refresh_token; // Get the refresh token from the client
+        if (!refreshToken) {
+            return res.status(401).json((0, errorHandling_1.errorHandling)(null, 'Refresh token not provided'));
+        }
+        // Verify the refresh token
+        const decodedToken = jsonwebtoken_1.default.verify(refreshToken, jwtConfig_1.default);
+        // Generate a new access token
+        const accessToken = jsonwebtoken_1.default.sign({
+            username: decodedToken.username,
+            id: decodedToken.id,
+            role: decodedToken.role
+        }, jwtConfig_1.default, { expiresIn: '24h' });
+        // Set the new access token in the response cookies
+        const accessTokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        res.cookie('access_token', accessToken, {
+            expires: accessTokenExpiration,
+            httpOnly: true
+        });
+        res.status(200).json((0, errorHandling_1.errorHandling)({
+            message: 'Access token refreshed',
+            data: accessToken,
+            accessTokenExpiration
+        }, null));
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json((0, errorHandling_1.errorHandling)(null, 'Refresh token is invalid or has expired'));
+    }
+});
+exports.refreshTokenRequest = refreshTokenRequest;
 // logout
 const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.clearCookie('access_token');
